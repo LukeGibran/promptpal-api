@@ -1,11 +1,13 @@
 const express = require('express');
 
 const  {
-    httpPrompt
+    httpLangChainPrompt,
+    httpGPTPrompt
 } = require('../controllers/main.controller')
 
 const mainRouter = express.Router()
 
-mainRouter.post('/', httpPrompt)
+mainRouter.post('/', httpLangChainPrompt)
+mainRouter.get('/gpt', httpGPTPrompt)
 
 module.exports = mainRouter;
