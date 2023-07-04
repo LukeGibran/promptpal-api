@@ -64,7 +64,7 @@ async function httpGPTPrompt(req, res) {
     {
       model: 'text-davinci-003',
       n: 1,
-      max_tokens: 4096,
+      max_tokens: 4000,
       temperature: 0.3,
       stream: true,
       prompt: query,
