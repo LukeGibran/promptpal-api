@@ -10,6 +10,6 @@ const mainRouter = express.Router()
 
 mainRouter.post('/', httpLangChainPrompt)
 mainRouter.get('/gpt', httpGPTPrompt)
-mainRouter.post('/gpt3', httpGPT3Prompt)
+mainRouter.get('/gpt3', httpGPT3Prompt)
 
 module.exports = mainRouter;

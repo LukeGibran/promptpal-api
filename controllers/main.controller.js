@@ -109,7 +109,10 @@ async function httpGPTPrompt(req, res) {
 }
 
 async function httpGPT3Prompt(req, res) {
-  const { query } = req.body;
+  const { query } = req.query;
+  const session = await createSession(req, res);
+  if (!session.isConnected) throw new Error('Not connected');
+
   try {
     const completion = await openai.createChatCompletion(
       {
@@ -124,20 +127,16 @@ async function httpGPT3Prompt(req, res) {
     );
 
     const stream = completion.data;
-    const sendToken = (data) => {
-      res.write(`${data}`);
-    };
-
     stream.on('data', (chunk) => {
       const payloads = chunk.toString().split('\n\n');
       for (const payload of payloads) {
-        if (payload.includes('[DONE]')) return;
+        if (payload.includes('[DONE]')) return session.push('DONE', 'error');
         if (payload.startsWith('data:')) {
           const data = JSON.parse(payload.replace('data: ', ''));
           try {
             const chunk = data.choices[0].delta?.content;
             if (chunk) {
-              sendToken(chunk)
+              session.push({ text: chunk });
             }
           } catch (error) {
             console.log(`Error with JSON.parse and ${payload}.\n${error}`);
@@ -148,7 +147,6 @@ async function httpGPT3Prompt(req, res) {
 
     stream.on('end', () => {
       setTimeout(() => {
-        console.log('\nStream done');
         res.end();
       }, 10);
     });
