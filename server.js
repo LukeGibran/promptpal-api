@@ -24,7 +24,7 @@ app.use(hpp())
 
 app.use(
   cors({
-    origin: "*",
+    origin: process.env.ORIGIN,
     optionsSuccessStatus: 200
   })
 );
