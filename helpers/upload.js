@@ -1,7 +1,7 @@
 var multer = require('multer')
 const path = require('path')
 
-const maxAllowedSize = 25 * 1024 * 1024 //max 25mb
+const maxAllowedSize = 200 * 1024 * 1024 //max 25mb
 
 const multerStorage = multer.diskStorage({
     destination: (req, file, cb) => {
