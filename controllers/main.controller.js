@@ -165,7 +165,6 @@ async function httpGPT3Prompt(req, res) {
 }
 
 async function httpUploadFile(req, res) {
-  console.log(req.file);
   const formData = new FormData();
   formData.append('file', fs.createReadStream(req.file.path));
 
@@ -261,7 +260,6 @@ async function httpChatFileStream(req, res) {
 
     stream.on('data', (chunk) => {
       const text = chunk.toString();
-      console.log('Chunk:', text);
       session.push({ text });
     });
 
