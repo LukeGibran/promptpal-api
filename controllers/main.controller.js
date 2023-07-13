@@ -6,6 +6,9 @@ const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
+const axios = require('axios');
+const fs = require('fs');
+const FormData = require('form-data');
 
 async function httpLangChainPrompt(req, res) {
   const { query } = req.body;
@@ -161,8 +164,128 @@ async function httpGPT3Prompt(req, res) {
   }
 }
 
+async function httpUploadFile(req, res) {
+  console.log(req.file);
+  const formData = new FormData();
+  formData.append('file', fs.createReadStream(req.file.path));
+
+  const options = {
+    headers: {
+      'x-api-key': process.env.CHAT_PDF_API_KEY,
+      ...formData.getHeaders(),
+    },
+  };
+  axios
+    .post('https://api.chatpdf.com/v1/sources/add-file', formData, options)
+    .then((response) => {
+      console.log('Source ID:', response.data.sourceId);
+      res.status(200).send({
+        sourceId: response.data.sourceId,
+        originalFilename: req.file.originalname,
+        filename: req.file.filename
+      });
+    })
+    .catch((error) => {
+      console.log('Error:', error.message);
+      console.log('Response:', error.response.data);
+      res.status(500);
+    });
+}
+
+async function httpChatFile(req, res) {
+  console.log(req.body);
+  const config = {
+    headers: {
+      'x-api-key': process.env.CHAT_PDF_API_KEY,
+      'Content-Type': 'application/json',
+    },
+  };
+
+  const data = {
+    sourceId: 'src_FXQUFbOOpOaomolPldxQA',
+    messages: [
+      {
+        role: 'user',
+        content: req.body.question,
+      },
+    ],
+  };
+
+  axios
+    .post('https://api.chatpdf.com/v1/chats/message', data, config)
+    .then((response) => {
+      console.log('Result:', response.data.content);
+      res.status(200).send();
+    })
+    .catch((error) => {
+      console.error('Error:', error.message);
+      console.log('Response:', error.response.data);
+      res.status(500);
+    });
+}
+
+async function httpChatFileStream(req, res) {
+  const { query, sourceId } = req.query;
+  const session = await createSession(req, res);
+  if (!session.isConnected) throw new Error('Not connected');
+
+  const config = {
+    headers: {
+      'x-api-key': process.env.CHAT_PDF_API_KEY,
+    },
+    responseType: 'stream',
+  };
+  const data = {
+    stream: true,
+    sourceId: sourceId,
+    messages: [
+      {
+        role: 'user',
+        content: query,
+      },
+    ],
+  };
+
+  try {
+    const response = await axios.post(
+      'https://api.chatpdf.com/v1/chats/message',
+      data,
+      config
+    );
+
+    const stream = response.data;
+
+    if (!stream) {
+      throw new Error('No data received');
+    }
+
+    stream.on('data', (chunk) => {
+      const text = chunk.toString();
+      console.log('Chunk:', text);
+      session.push({ text });
+    });
+
+    stream.on('end', () => {
+      setTimeout(() => {
+        res.end();
+      }, 10);
+    });
+
+    stream.on('error', (err) => {
+      console.log(err);
+      res.status(500).send(err);
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).send(err);
+  }
+}
+
 module.exports = {
   httpLangChainPrompt,
+  httpChatFileStream,
+  httpUploadFile,
   httpGPT3Prompt,
   httpGPTPrompt,
+  httpChatFile,
 };
