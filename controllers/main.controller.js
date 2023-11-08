@@ -135,8 +135,10 @@ async function httpGPT3Prompt(req, res) {
       for (const payload of payloads) {
         if (payload.includes('[DONE]')) return session.push('DONE', 'error');
         if (payload.startsWith('data:')) {
-          const data = JSON.parse(payload.replace('data: ', ''));
           try {
+            let data
+            data = payload.replace('data: ', '')
+            data = JSON.parse(data)
             const chunk = data.choices[0].delta?.content;
             if (chunk) {
               session.push({ text: chunk });
